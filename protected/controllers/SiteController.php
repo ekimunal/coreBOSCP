@@ -1,7 +1,7 @@
 <?php
 /*
- * vtiger CRM vtyiiCPng - web based vtiger CRM Customer Portal
- * Copyright 2012 JPL TSolucio, S.L.   --   This file is a part of vtiger CRM vtyiiCPng.
+ * coreBOSCP - web based coreBOS Customer Portal
+ * Copyright 2012 JPL TSolucio, S.L.   --   This file is a part of coreBOSCP.
  * Licensed under the GNU General Public License (the "License");
  * This file is a modified version of it's equivalent in the Chive Project
  *
@@ -134,6 +134,23 @@ class SiteController extends Controller
 		));
 	}
 
+	/**
+	 * This is the Payment Thank You page
+	 */
+	public function actionThankYouForPayment() {
+		$this->render('ThankYouForPayment', array(
+			'formatter' => Yii::app()->getDateFormatter()
+		));
+	}
+
+	/**
+	 * This is the Payment Error page
+	 */
+	public function actionErrorInPayment() {
+		$this->render('ErrorInPayment', array(
+			'formatter' => Yii::app()->getDateFormatter()
+		));
+	}
 	public function actionNoTranslate()
 	{
 		$this->render('index', array(

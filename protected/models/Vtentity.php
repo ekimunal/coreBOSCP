@@ -1,20 +1,22 @@
 <?php
-/**************************************************************************************************
- * Evolutivo vtyiiCPng - web based vtiger CRM Customer Portal
- * Copyright 2012 JPL TSolucio, S.L.  --  This file is a part of vtyiiCPNG.
- * You can copy, adapt and distribute the work under the "Attribution-NonCommercial-ShareAlike"
- * Vizsage Public License (the "License"). You may not use this file except in compliance with the
- * License. Roughly speaking, non-commercial users may share and modify this code, but must give credit
- * and share improvements. However, for proper details please read the full License, available at
- * http://vizsage.com/license/Vizsage-License-BY-NC-SA.html and the handy reference for understanding
- * the full license at http://vizsage.com/license/Vizsage-Deed-BY-NC-SA.html. Unless required by
- * applicable law or agreed to in writing, any software distributed under the License is distributed
- * on an  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and limitations under the
- * License terms of Creative Commons Attribution-NonCommercial-ShareAlike 3.0 (the License).
+/*************************************************************************************************
+ * coreBOSCP - web based coreBOS Customer Portal
+ * Copyright 2011-2014 JPL TSolucio, S.L.   --   This file is a part of coreBOSCP.
+ * Licensed under the GNU General Public License (the "License") either
+ * version 3 of the License, or (at your option) any later version; you may not use this
+ * file except in compliance with the License. You can redistribute it and/or modify it
+ * under the terms of the License. JPL TSolucio, S.L. reserves all rights not expressly
+ * granted by the License. coreBOSCP distributed by JPL TSolucio S.L. is distributed in
+ * the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. Unless required by
+ * applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT ANY WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing
+ * permissions and limitations under the License. You may obtain a copy of the License
+ * at <http://www.gnu.org/licenses/>
  *************************************************************************************************
  *  Author       : JPL TSolucio, S. L.
- */
+ *************************************************************************************************/
 
 class Vtentity extends CActiveRecord
 {
@@ -59,11 +61,11 @@ class Vtentity extends CActiveRecord
 			$field=$fields[$pos];
 			$key=$field['name'];
 			$label=$field['label'];
-			if (in_array($key,explode(',',$this->getLookupField()))
-			 or (strpos($key,'title') and in_array($module,array('HelpDesk','Documents'))))
+			if (in_array($key,explode(',',$this->getLookupField())) || (strpos($key,'title') and in_array($module,array('HelpDesk','Documents')))) {
 				$fieldlabels[$key]=array('name'=>$key,'header'=>$label,'type'=>'html','value'=>$this->getViewLinkField($key));
-			else
-			$fieldlabels[$key]=array('name'=>$key,'header'=>$label,'type'=>$this->convertVtigerUIType2Yii($field['uitype']));
+			} else {
+				$fieldlabels[$key]=array('name'=>$key,'header'=>$label,'type'=>$this->convertVtigerUIType2Yii($field['uitype']));
+			}
 		}
 		return $fieldlabels;
 	}
@@ -143,6 +145,7 @@ class Vtentity extends CActiveRecord
 				if ($_GET['fdelete'.$nr]==1) continue; // this row has been deleted
 				if ($_GET['fcol'.$nr]=='' or $_GET['fop'.$nr]=='') continue; // this row is empty
 				$value = $_GET['fval'.$nr];
+				$orig_value = $value;
 				switch ($_GET['fop'.$nr]) {
 					case 'e':
 						$value = '='.$value;
@@ -180,6 +183,7 @@ class Vtentity extends CActiveRecord
 						$value = '';
 				}
 				$conds = array(
+						'original' => $orig_value,
 						'value' => $value,
 						'glue' => (empty($_GET['fglue'.($nr)]) ? '' : $_GET['fglue'.($nr)]),
 						);
@@ -200,10 +204,42 @@ class Vtentity extends CActiveRecord
 			if($attr!=" ") {
 				if (!empty($sattr[$key])) {
 					foreach ($sattr[$key] as $cond) {
-						$criteria->compare($key,$cond['value'],true,$cond['glue'],false);
+						if($key == 'assigned_user_id'){
+							$cvt = $this->getClientVtiger();
+							$allUsers = $cvt->doInvoke('getAllUsers');
+							foreach($allUsers as $id => $val){
+								$allUsers[$id] = strtolower($val);
+							}
+							$matchUsers = preg_grep("/.*".strtolower($cond['original']).".*/",$allUsers);
+							if(!empty($matchUsers)){
+								$usrids = array_keys($matchUsers);
+								$condition = "assigned_user_id IN ('".implode("','", $usrids)."')";
+							}else{
+								$condition = 'FALSE';
+							}
+							$criteria->addCondition($condition);
+						}else{
+							$criteria->compare($key,$cond['value'],true,$cond['glue'],false);
+						}
 					}
 				} else {
-					$criteria->compare($key,$attr,true);
+					if($key == 'assigned_user_id'){
+						$cvt = $this->getClientVtiger();
+						$allUsers = $cvt->doInvoke('getAllUsers');
+						foreach($allUsers as $id => $val){
+							$allUsers[$id] = strtolower($val);
+						}
+						$matchUsers = preg_grep("/.*".strtolower($attr).".*/",$allUsers);
+						if(!empty($matchUsers)){
+							$usrids = array_keys($matchUsers);
+							$condition = "assigned_user_id IN ('".implode("','", $usrids)."')";
+						}else{
+							$condition = 'FALSE';
+						}
+						$criteria->addCondition($condition);
+					}else{
+						$criteria->compare($key,$attr,true);
+					}
 				}
 			}
 		}
@@ -216,6 +252,7 @@ class Vtentity extends CActiveRecord
 		return new CActiveDataProvider(get_class($this), array(
 			'criteria'=>$criteria,
 			'pagination'=>$pagectrl,
+			'sort' => array('attributes' => array_keys($this->gridViewColumns())),
 		));
 	}
 
@@ -235,8 +272,8 @@ class Vtentity extends CActiveRecord
 			$fields=$this->getFieldsInfo();
 		foreach ($fields as $field) {
 			if (!is_array($field)) continue;
-                       $key=$field['name'];
-			if($key!=='id') {                            
+			$key=$field['name'];
+			if($key!=='id') {
 				$dvfields[$key]=$this->getAttribute($key);
 			}
 		}
@@ -255,8 +292,8 @@ class Vtentity extends CActiveRecord
 			$fields=$this->getFieldsInfo(true);
 		foreach ($fields as $field) {
 			if (!is_array($field)) continue;
-                       $key=$field['name'];
-			if($key!=='id') {                            
+			$key=$field['name'];
+			if($key!=='id') {
 				$value=$this->getAttribute($key);
 				$uitype=intval($field['uitype']);
 				$label=$field['label'];
@@ -266,6 +303,14 @@ class Vtentity extends CActiveRecord
 				unset($htmloptionsAllFields['dateformat']);
 				if(isset($field['type']['name']) && !empty($field['type']['name']) && $field['type']['name']=='date')
 					$htmloptionsAllFields['dateformat'] = $field['type']['format'];
+				if (isset($field['type']['picklistValues']) && !empty($field['type']['picklistValues'])) {
+					foreach ($field['type']['picklistValues'] as $idx => $plvalue) {
+						if ($plvalue['value']==$value) {
+							$value = $plvalue['label'];
+							break;
+						}
+					}
+				}
 				$dvfields[$key]=$this->getVtigerViewField($uitype,$key,$value,$label,$sequence,$block,$blocksequence,$htmloptionsAllFields);
 			}
 		}
@@ -299,7 +344,7 @@ class Vtentity extends CActiveRecord
 	}
 	
 	/**
-	 * Depending on the uitype parameter coming from vtiger CRM, decides what kind of widget to show
+	 * Depending on the uitype parameter coming from coreBOS, decides what kind of widget to show
 	 * @param integer $uitype
 	 * @param string $fieldname
 	 * @param mixed $fieldvalue
@@ -408,7 +453,7 @@ class Vtentity extends CActiveRecord
 			case 78:
 			case 79:
 			case 80:
-			case 81:                       
+			case 81:
 			case 101:
 				$widget=array(
 				'sequence'=>$sequence,
@@ -478,9 +523,9 @@ class Vtentity extends CActiveRecord
 				'value'=>$value,
 				'block'=>$block,
 				'blocksequence'=>$blocksequence,
-				);			
+				);
 				break;
-                        case 26:
+            case 26:
 			case 52:
 			case 53:
 			case 54:
@@ -727,4 +772,33 @@ class Vtentity extends CActiveRecord
 		}
 		return $ret;
 	}
+	
+	//get documents folders
+	public function getDocumentFolders() {
+			$response = new AjaxResponse();
+			
+			$vtModule = $this->getModule();
+			$clientvtiger=$this->getClientVtiger();
+			$folders = array();
+			if(!$clientvtiger) Yii::log('login failed');
+			else {
+				$criteria = $this->getDbCriteria();
+				$this->setCriteria($criteria);
+				$entityArray = $this->getData('folderid');
+				$wsEntityId = $clientvtiger->doInvoke('vtyiicpng_getWSEntityId',array('entityName'=>'DocumentFolders'));
+				$folderids = array();
+				foreach($entityArray as $entityRecord)
+				{
+					if(!in_array($entityRecord['folderid'], $folderids))
+					{
+						$foldername = $clientvtiger->doQuery("Select foldername,description from documentfolders Where id = ".$wsEntityId.$entityRecord['folderid']);
+
+						$folders[]= array('folderid'=>$entityRecord['folderid'],'foldername'=>$foldername[0]['foldername'],'description'=>$foldername[0]['description']);
+						$folderids[] = $entityRecord['folderid'];
+						
+					}
+				}
+			}
+			return $folders;
+		}	
 }

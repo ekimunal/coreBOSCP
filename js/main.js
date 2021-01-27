@@ -179,8 +179,7 @@ var lang = {
 };
 
 var filedownload = {
-	download: function(_url, _data) 
-	{
+	download: function(_url, _data) {
 		io = document.createElement('iframe');
 		io.src = _url + (_data ? '?' + $.param(_data) : '');
 		io.style.display = 'block';
@@ -188,7 +187,28 @@ var filedownload = {
 		$('body').append(io);
 		setTimeout(function() {
 			io.remove();
-		}, 5000);
-		
+		}, 15000);
 	}
 };
+
+function sendtopaygateway(cypid) {
+	// create form with data values and send
+	var url = 'https://your.corebos.tld/Payment.php';
+	var data = {
+		'cpid': cypid,
+		'returnUrl': 'https://your.coreboscp.tld/index.php#site/ThankYouForPayment',
+		'cancelUrl': 'https://your.coreboscp.tld/index.php#site/ErrorInPayment'
+	};
+	var form = $('<form id="paypal-form" action="' + url + '" method="POST"></form');
+
+	for(x in data){
+		form.append('<input type="hidden" name="'+x+'" value="'+data[x]+'" />');
+	}
+	
+	// append form
+	$('body').append(form);
+	
+	// submit form
+	$('#paypal-form').submit();
+
+}

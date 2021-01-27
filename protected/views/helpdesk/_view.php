@@ -1,19 +1,23 @@
-<?php /*************************************************************************************************
- * Evolutivo vtyiiCPng - web based vtiger CRM Customer Portal
- * Copyright 2012 JPL TSolucio, S.L.  --  This file is a part of vtyiiCPNG.
- * You can copy, adapt and distribute the work under the "Attribution-NonCommercial-ShareAlike"
- * Vizsage Public License (the "License"). You may not use this file except in compliance with the
- * License. Roughly speaking, non-commercial users may share and modify this code, but must give credit
- * and share improvements. However, for proper details please read the full License, available at
- * http://vizsage.com/license/Vizsage-License-BY-NC-SA.html and the handy reference for understanding
- * the full license at http://vizsage.com/license/Vizsage-Deed-BY-NC-SA.html. Unless required by
- * applicable law or agreed to in writing, any software distributed under the License is distributed
- * on an  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and limitations under the
- * License terms of Creative Commons Attribution-NonCommercial-ShareAlike 3.0 (the License).
+<?php 
+/*************************************************************************************************
+ * coreBOSCP - web based coreBOS Customer Portal
+ * Copyright 2011-2014 JPL TSolucio, S.L.   --   This file is a part of coreBOSCP.
+ * Licensed under the GNU General Public License (the "License") either
+ * version 3 of the License, or (at your option) any later version; you may not use this
+ * file except in compliance with the License. You can redistribute it and/or modify it
+ * under the terms of the License. JPL TSolucio, S.L. reserves all rights not expressly
+ * granted by the License. coreBOSCP distributed by JPL TSolucio S.L. is distributed in
+ * the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. Unless required by
+ * applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT ANY WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing
+ * permissions and limitations under the License. You may obtain a copy of the License
+ * at <http://www.gnu.org/licenses/>
  *************************************************************************************************
  *  Author       : JPL TSolucio, S. L.
- *************************************************************************************************/?>
+ *************************************************************************************************/
+?>
 <div class="view">
 <div class="helpdesk">
 <?php
@@ -30,7 +34,7 @@ echo CHtml::hiddenField('idfieldval',$data->__get($this->entityidField), array('
 <div class="helpdesk_comments" id="helpdesk_comments">
 <?php
 $relComments = $data->GetRelatedRecords('ModComments');
-if (count($relComments)>0) {
+if (is_array($relComments) and count($relComments)>0) {
 	$this->renderPartial('//helpdesk/_comments',array(
 		'relComments'=>$relComments,
 	));
@@ -40,7 +44,7 @@ if (count($relComments)>0) {
 <div class="helpdesk_docs" id="helpdesk_docs">
 <?php
 $relDocs = $data->GetRelatedRecords('Documents');
-if (count($relDocs)>0) {
+if (is_array($relDocs) and count($relDocs)>0) {
 	$this->renderPartial('//helpdesk/_getdocs',array(
 		'relDocs'=>$relDocs,
 	));
@@ -83,8 +87,8 @@ if (count($relDocs)>0) {
 $moduleNames = Yii::app()->cache->get('yiicpng.sidebar.availablemodules');
 if (is_array($moduleNames) and isset($moduleNames['Timecontrol'])) {
 	$relTCs = $data->GetRelatedRecords('Timecontrol');
-	$relTCs = $data->dereferenceIds($relTCs);
-	if (count($relTCs)>0) {
+	if (is_array($relTCs) and count($relTCs)>0) {
+		$relTCs = $data->dereferenceIds($relTCs);
 		$this->renderPartial('//helpdesk/_gettcs',array(
 			'relTCs'=>$relTCs,
 			'TCName'=>$moduleNames['Timecontrol']['name'],
@@ -108,7 +112,7 @@ if (is_array($moduleNames) and isset($moduleNames['Timecontrol'])) {
 	</thead>
 	<tbody>
 <?php 
-	$dontShow=array('ticket_no','description','solution','ticket_title','update_log','modifiedby','from_portal','id');
+	$dontShow=array('ticket_no','description','solution','ticket_title','update_log','modifiedby','from_portal','id','commentadded','from_mailscanner');
 	$i=0;
 	foreach ($fields as $field) {
 		if (!is_array($field) || empty($field['name'])) continue;  // jump values, process only fields
@@ -116,11 +120,22 @@ if (is_array($moduleNames) and isset($moduleNames['Timecontrol'])) {
 		if (in_array($fieldname,$dontShow)) continue;  // do not show these fields
 		$fieldlabel=$field['label'];
 		$uitype=intval($uitypes[$fieldname]);
-		if(isset($field['type']['refersTo']) && !empty($field['type']['refersTo'])) $refersTo=$field['type']['refersTo'];
-		else $refersTo='';
+		if (isset($field['type']['refersTo']) && !empty($field['type']['refersTo'])) {
+			$refersTo=$field['type']['refersTo'];
+		} else {
+			$refersTo='';
+		}
+		$datavalue=$data->__get($fieldname);
+		if (isset($field['type']['picklistValues']) && !empty($field['type']['picklistValues'])) {
+			foreach ($field['type']['picklistValues'] as $idx => $plvalue) {
+				if ($plvalue['value']==$datavalue) {
+					$datavalue = $plvalue['label'];
+				}
+			}
+		}
 		echo '<tr class="'.($i % 2 == 0 ? 'even' : 'odd').'">
 		<td><b>'.$fieldlabel.'</b></td><td></td>
-		<td>'.$data->__get($fieldname).'</td>
+		<td>'.$datavalue.'</td>
 		</tr>';
 		$i++;
 	} ?>

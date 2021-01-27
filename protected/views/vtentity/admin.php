@@ -1,19 +1,21 @@
 <?php
 /*************************************************************************************************
-* Evolutivo vtyiiCPng - web based vtiger CRM Customer Portal
-* Copyright 2012 JPL TSolucio, S.L.  --  This file is a part of vtyiiCPNG.
-* You can copy, adapt and distribute the work under the "Attribution-NonCommercial-ShareAlike"
-* Vizsage Public License (the "License"). You may not use this file except in compliance with the
-* License. Roughly speaking, non-commercial users may share and modify this code, but must give credit
-* and share improvements. However, for proper details please read the full License, available at
-* http://vizsage.com/license/Vizsage-License-BY-NC-SA.html and the handy reference for understanding
-* the full license at http://vizsage.com/license/Vizsage-Deed-BY-NC-SA.html. Unless required by
-* applicable law or agreed to in writing, any software distributed under the License is distributed
-* on an  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and limitations under the
-* License terms of Creative Commons Attribution-NonCommercial-ShareAlike 3.0 (the License).
-*************************************************************************************************
-*  Author       : JPL TSolucio, S. L.
+ * coreBOSCP - web based coreBOS Customer Portal
+ * Copyright 2011-2014 JPL TSolucio, S.L.   --   This file is a part of coreBOSCP.
+ * Licensed under the GNU General Public License (the "License") either
+ * version 3 of the License, or (at your option) any later version; you may not use this
+ * file except in compliance with the License. You can redistribute it and/or modify it
+ * under the terms of the License. JPL TSolucio, S.L. reserves all rights not expressly
+ * granted by the License. coreBOSCP distributed by JPL TSolucio S.L. is distributed in
+ * the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. Unless required by
+ * applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT ANY WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing
+ * permissions and limitations under the License. You may obtain a copy of the License
+ * at <http://www.gnu.org/licenses/>
+ *************************************************************************************************
+ *  Author       : JPL TSolucio, S. L.
  *************************************************************************************************/
 
 Yii::app()->clientScript->registerScript('search', "
@@ -53,7 +55,7 @@ $('.search-form form').submit(function(){
 		$model->gridViewColumns(),// $model->getDetailGridFields($lvfields,$lvlinkfields), this worked in ENTITY
 		array(array(
 			'class'=>'vtyiicpngButtonColumn',
-			'template'=>'{view}{update}{delete}{dlpdf}', //{related}',               
+			'template'=>'{view}{update}{delete}{dlpdf}{pay}', //{related}',
 			'header'=>CHtml::dropDownList('pageSize',
 				$pageSize,
 				array(5=>5,10=>10,20=>20,30=>30,50=>50,100=>100),
@@ -74,6 +76,11 @@ $('.search-form form').submit(function(){
 					'label'=>Yii::t('core', 'downloadpdf'),
 					'imageUrl'=>ICONPATH . '/16/pdf_icon_16.gif',
 					'url'=>'"javascript: filedownload.download(\''.yii::app()->baseUrl.'/index.php/'.$modelURL.'/downloadpdf/".$data["'.$model->entityidField."\"].\"','')\"",
+				),
+				'pay' => array (
+					'label'=>Yii::t('core', 'paycyp'),
+					'imageUrl'=>ICONPATH . '/16/pay.png',
+					'url'=>'"javascript: sendtopaygateway(\'".$data["'.$model->entityidField."\"].\"')\"",
 				),
 			),
 		/*
